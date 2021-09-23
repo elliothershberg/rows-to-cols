@@ -1,0 +1,74 @@
+---
+title: "Rows to Columns"
+author: "Elliot Hershberg"
+date: "9/23/2021"
+output: html_document
+---
+
+```{r imports, warning=FALSE}
+library(tidyverse)
+```
+
+Let's say I want data of the following shape:
+
+```{r create example data}
+example <- tribble(
+  ~gene, ~time0h, ~time1h, ~time3h, ~time4h,
+  "ASS", 4.12, 5.2, 3.4, 3.2,
+  "BAS", 1.2, 3.4, 4.6, 3.8,
+  "CAS", 10.2, 2.3, 0.8, 0.1
+  
+)
+
+example
+```
+
+(Example from [Mfuzz](http://mfuzz.sysbiolab.eu/))
+
+To start I have the following shape:
+
+```{r create actual data}
+df <- tribble(
+  ~time, ~ASS, ~BAS, ~CAS,
+  "time0h", 4.12, 1.2, 10.2,
+  "time1h", 5.2, 3.4, 2.3,
+  "time3h", 3.4, 4.6, 0.8,
+  "time4h", 3.2, 3.8, 0.1
+)
+
+df
+```
+
+So I want to transpose the dataframe, since my rows are what I want my columns to be:
+
+```{r}
+t(df)
+```
+
+While the code is simple, it creates a character vector:
+
+```{r}
+typeof(t(df))
+```
+
+And I have to do some manual clean up when converting back to a tibble as a result:
+
+```{r}
+reshaped <- df %>%
+  select(!time) %>%
+  t() %>%
+  as_tibble(.name_repair = "minimal")
+
+colnames(reshaped) <- df$time
+reshaped$gene <- colnames(df)[2:ncol(df)]
+
+reshaped <- reshaped %>%
+  relocate(gene)
+
+reshaped
+```
+
+It feels like I should be able to do a transpose without getting the wonky intermediate character vector, but couldn't find a simple solution with either `pivot_*` from `{tidyr}`.
+
+
+
